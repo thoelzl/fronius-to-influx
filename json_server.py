@@ -5,6 +5,7 @@ import datetime
 import pytz
 
 app = Flask(__name__)
+tz = pytz.timezone('Europe/Warsaw')
 
 with open('samples/CommonInverterData.json', 'r') as f:
     common_inverter_data = [json.loads(r) for r in f.readlines()]
@@ -18,7 +19,7 @@ with open('samples/MinMaxInverterData.json', 'r') as f:
 
 @app.route('/CommonInverterData.json')
 def common_inverter_data_endpoint() -> str:
-    now = datetime.datetime.now(tz=pytz.timezone('Europe/Warsaw')).isoformat('T')
+    now = datetime.datetime.now(tz=tz).isoformat('T')
     json_response = random.choice(common_inverter_data)
     json_response['Head']['Timestamp'] = now
     return json_response
@@ -26,7 +27,7 @@ def common_inverter_data_endpoint() -> str:
 
 @app.route('/3PInverterData.json')
 def threep_inverter_data_endpoint() -> str:
-    now = datetime.datetime.now(tz=pytz.timezone('Europe/Warsaw')).isoformat('T')
+    now = datetime.datetime.now(tz=tz).isoformat('T')
     json_response = random.choice(threep_inverter_data)
     json_response['Head']['Timestamp'] = now
     return json_response
@@ -34,7 +35,7 @@ def threep_inverter_data_endpoint() -> str:
 
 @app.route('/MinMaxInverterData.json')
 def min_max_inverter_data_endpoint() -> str:
-    now = datetime.datetime.now(tz=pytz.timezone('Europe/Warsaw')).isoformat('T')
+    now = datetime.datetime.now(tz=tz).isoformat('T')
     json_response = random.choice(min_max_inverter_data)
     json_response['Head']['Timestamp'] = now
     return json_response

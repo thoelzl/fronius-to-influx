@@ -5,8 +5,9 @@ from time import sleep
 from typing import Any, Dict, List, Type
 
 import pytz
-from astral import Location
-from influxdb import InfluxDBClient
+from astral.location import Location
+from influxdb_client import InfluxDBClient
+from influxdb_client.client.write_api import SYNCHRONOUS
 from requests import get
 from requests.exceptions import ConnectionError
 
@@ -27,8 +28,9 @@ class FroniusToInflux:
     BACKOFF_INTERVAL = 3
     IGNORE_SUN_DOWN = False
 
-    def __init__(self, client: InfluxDBClient, location: Location, endpoints: List[str], tz: Any) -> None:
+    def __init__(self, client: InfluxDBClient, bucket: str, location: Location, endpoints: List[str], tz: Any) -> None:
         self.client = client
+        self.bucket = bucket
         self.location = location
         self.endpoints = endpoints
         self.tz = tz
@@ -118,6 +120,11 @@ class FroniusToInflux:
             raise SunIsDown
         return None
 
+    def write_data_points(self, collected_data):
+        write_api = self.client.write_api(write_options=SYNCHRONOUS)
+        write_api.write(bucket=self.bucket, record=collected_data)
+        print('Data written')
+
     def run(self) -> None:
         try:
             while True:
@@ -129,8 +136,7 @@ class FroniusToInflux:
                         self.data = response.json()
                         collected_data.extend(self.translate_response())
                         sleep(self.BACKOFF_INTERVAL)
-                    self.client.write_points(collected_data)
-                    print('Data written')
+                    self.write_data_points(collected_data)
                     sleep(self.BACKOFF_INTERVAL)
                 except SunIsDown:
                     print("Waiting for sunrise")
@@ -142,8 +148,8 @@ class FroniusToInflux:
                     print('Waited 10 seconds for connection')
                 except Exception as e:
                     self.data = {}
-                    sleep(10)
                     print("Exception: {}".format(e))
-
+                    sleep(10)
+                    
         except KeyboardInterrupt:
             print("Finishing. Goodbye!")
