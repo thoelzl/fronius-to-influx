@@ -48,8 +48,7 @@ class FroniusToInflux:
         collection = self.data['Head']['RequestArguments']['DataCollection']
         timestamp = self.data['Head']['Timestamp']
         if collection == 'CommonInverterData':
-            return [
-                {
+            device_status = {
                     'measurement': 'DeviceStatus',
                     'time': timestamp,
                     'fields': {
@@ -60,8 +59,9 @@ class FroniusToInflux:
                         'StateToReset': self.data['Body']['Data']['DeviceStatus']['StateToReset'],
                         'StatusCode': self.data['Body']['Data']['DeviceStatus']['StatusCode'],
                     }
-                },
-                {
+                }
+
+            inverter_data = {
                     'measurement': collection,
                     'time': timestamp,
                     'fields': {
@@ -76,7 +76,23 @@ class FroniusToInflux:
                         'TOTAL_ENERGY': self.get_float_or_zero('TOTAL_ENERGY'),
                     }
                 }
-            ]
+                
+            # data for multiple strings, available on GEN24/Tauro only
+            data = self.data['Body']['Data']
+            fields_strings = []
+            if 'IDC_1' in data:
+                fields_strings.extend(['IDC_1', 'UDC_1'])
+            if 'IDC_2' in data:
+                fields_strings.extend(['IDC_2', 'UDC_2'])
+            if 'IDC_3' in data:
+                fields_strings.extend(['IDC_3', 'UDC_3'])
+            if 'IDC_4' in data:
+                fields_strings.extend(['IDC_4', 'UDC_4'])
+
+            for field in fields_strings:
+                inverter_data['fields'][field] = self.get_float_or_zero(field)
+
+            return [device_status, inverter_data]
         elif collection == '3PInverterData':
             return [
                 {
