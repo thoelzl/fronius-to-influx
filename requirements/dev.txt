@@ -1,5 +1,2 @@
--r prod.txt
 Flask==2.3.2
-ipython==8.13.2
-mypy==1.3
-typing==3.10.0.0
+ipython==8.12.1

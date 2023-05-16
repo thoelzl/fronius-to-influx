@@ -40,6 +40,23 @@ Edit the `dev.py` file and adjust accordingly. Then run:
 
     python src/dev.py
 
+# Docker based environment
+Build the docker image
+```
+cd fronius-to-influx
+docker build -t fronius-to-influx:0.1.0 -f ./docker/Dockerfile .
+```
+
+Run application inside a docker container
+```
+docker run --rm -d --network host --name symo2influx fronius-to-influx:0.1.0 python -u ./src/dev.py
+```
+
+Show log output
+```
+docker logs -f symo2influx
+```
+
 # grafana dashboards
 I put my dashboards in `grafana_dashboards` directory. Feel free to use them.
 
