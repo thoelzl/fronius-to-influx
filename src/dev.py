@@ -3,8 +3,11 @@ from influxdb_client import InfluxDBClient
 from astral import LocationInfo
 from astral.location import Location
 
+import logging
 import pytz
 
+# configure logging
+logging.basicConfig(level=logging.INFO, format='%(asctime)s [%(name)s] %(levelname)s: %(message)s')
 
 client = InfluxDBClient(url='http://localhost:8087', username='grafana', password='grafana', org='fronius')
 bucket = 'grafana'

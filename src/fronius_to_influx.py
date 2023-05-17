@@ -1,9 +1,8 @@
-# coding: utf-8
+import logging
 import datetime
 import json
 from time import sleep
 from typing import Any, Dict, List, Type
-import traceback
 
 import pytz
 from astral.location import Location
@@ -35,6 +34,8 @@ class FroniusToInflux:
         self.location = location
         self.endpoints = endpoints
         self.tz = tz
+
+        self.logger = logging.getLogger(self.__class__.__name__)
         self.data: Dict[Any, Any] = {}
 
     def get_float_or_zero(self, value: str) -> float:
@@ -137,9 +138,10 @@ class FroniusToInflux:
     def write_data_points(self, collected_data):
         write_api = self.client.write_api(write_options=SYNCHRONOUS)
         write_api.write(bucket=self.bucket, record=collected_data)
-        print('Data written')
+        self.logger.info('data written')
 
     def run(self) -> None:
+        self.logger.info("starting application")
         try:
             while True:
                 try:
@@ -153,18 +155,17 @@ class FroniusToInflux:
                     self.write_data_points(collected_data)
                     sleep(self.BACKOFF_INTERVAL)
                 except SunIsDown:
-                    print("Waiting for sunrise")
+                    self.logger.info("Waiting for sunrise")
                     sleep(60)
-                    print('Waited 60 seconds for sunrise')
+                    self.logger.info('Waited 60 seconds for sunrise')
                 except ConnectionError:
-                    print("Waiting for connection...")
+                    self.logger.info("Waiting for connection...")
                     sleep(10)
-                    print('Waited 10 seconds for connection')
+                    self.logger.info('Waited 10 seconds for connection')
                 except Exception as e:
+                    self.logger.warning("Exception: {}".format(e), exc_info=True)
                     self.data = {}
-                    print(traceback.format_exc())
-                    print("Exception: {}".format(e))
                     sleep(10)
                     
         except KeyboardInterrupt:
-            print("Finishing. Goodbye!")
+            self.logger.info("Finishing. Goodbye!")
