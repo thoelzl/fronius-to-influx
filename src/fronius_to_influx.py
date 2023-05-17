@@ -3,6 +3,7 @@ import datetime
 import json
 from time import sleep
 from typing import Any, Dict, List, Type
+import traceback
 
 import pytz
 from astral.location import Location
@@ -42,23 +43,21 @@ class FroniusToInflux:
             internal_data = self.data['Body']['Data']
         except KeyError:
             raise WrongFroniusData('Response structure is not healthy.')
-        return float(internal_data.get(value, {}).get('Value', 0))
+        result = internal_data.get(value, {}).get('Value', 0)
+        if result:
+            return float(result)
+        return 0.0
 
     def translate_response(self) -> List[Dict]:
         collection = self.data['Head']['RequestArguments']['DataCollection']
         timestamp = self.data['Head']['Timestamp']
         if collection == 'CommonInverterData':
+            data = self.data['Body']['Data']
+
             device_status = {
                     'measurement': 'DeviceStatus',
                     'time': timestamp,
-                    'fields': {
-                        'ErrorCode': self.data['Body']['Data']['DeviceStatus']['ErrorCode'],
-                        'LEDColor': self.data['Body']['Data']['DeviceStatus']['LEDColor'],
-                        'LEDState': self.data['Body']['Data']['DeviceStatus']['LEDState'],
-                        'MgmtTimerRemainingTime': self.data['Body']['Data']['DeviceStatus']['MgmtTimerRemainingTime'],
-                        'StateToReset': self.data['Body']['Data']['DeviceStatus']['StateToReset'],
-                        'StatusCode': self.data['Body']['Data']['DeviceStatus']['StatusCode'],
-                    }
+                    'fields': data['DeviceStatus']
                 }
 
             inverter_data = {
@@ -76,12 +75,11 @@ class FroniusToInflux:
                         'TOTAL_ENERGY': self.get_float_or_zero('TOTAL_ENERGY'),
                     }
                 }
-                
-            # data for multiple strings, available on GEN24/Tauro only
-            data = self.data['Body']['Data']
+
+            # add additional fields for GEN24 Symo
             fields_strings = []
-            if 'IDC_1' in data:
-                fields_strings.extend(['IDC_1', 'UDC_1'])
+            if 'SAC' in data:
+                fields_strings.append('SAC')
             if 'IDC_2' in data:
                 fields_strings.extend(['IDC_2', 'UDC_2'])
             if 'IDC_3' in data:
@@ -164,6 +162,7 @@ class FroniusToInflux:
                     print('Waited 10 seconds for connection')
                 except Exception as e:
                     self.data = {}
+                    print(traceback.format_exc())
                     print("Exception: {}".format(e))
                     sleep(10)
                     
