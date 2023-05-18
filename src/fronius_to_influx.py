@@ -52,6 +52,7 @@ class FroniusToInflux:
     def translate_response(self) -> List[Dict]:
         collection = self.data['Head']['RequestArguments']['DataCollection']
         timestamp = self.data['Head']['Timestamp']
+        self.logger.debug(f"translate {collection}, {timestamp}: {self.data['Body']['Data']}")
         if collection == 'CommonInverterData':
             data = self.data['Body']['Data']
 
@@ -138,7 +139,7 @@ class FroniusToInflux:
     def write_data_points(self, collected_data):
         write_api = self.client.write_api(write_options=SYNCHRONOUS)
         write_api.write(bucket=self.bucket, record=collected_data)
-        self.logger.info('data written')
+        self.logger.info(f'written data: {[d['measurement'] for d in collected_data]}')
 
     def run(self) -> None:
         self.logger.info("starting application")
